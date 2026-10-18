@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>유실물 조회 | ○○ 유실물 보관센터</title>
+<style>
+  :root {
+    --navy: #1f2d4a;
+    --line: #d9dde3;
+    --line-strong: #9aa3b0;
+    --text: #222;
+    --muted: #6b7380;
+    --bg-soft: #f5f6f8;
+    --accent: #2b5fb4;
+    --warm: #ff9a4d;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    color: var(--text);
+    background: #000;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; }
+
+  /* ===== 단계 전환 ===== */
+  .stage { display: none; min-height: 100vh; }
+  .stage.on { display: block; }
+
+  /* ===== 1. 시작 화면 ===== */
+  #start { background: #000; color: #777; cursor: pointer; }
+  #start.on { display: grid; place-items: center; }
+  #start p { margin: 0; font-size: 13px; letter-spacing: .3em; animation: blink 2.4s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  /* ===== 2. 오프닝 영상 ===== */
+  #opening { background: #000; position: relative; }
+  #opening.on { display: grid; place-items: center; }
+  #opening video { width: 100vw; height: 100vh; object-fit: cover; display: block; }
+  #opening .ph { color: #555; font-size: 13px; }
+
+  /* 하얗게 번지는 전환 */
+  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 50; transition: opacity 1.4s ease; }
+  #flash.on { opacity: 1; }
+  #flash.slow { transition: opacity 2.6s ease; }
+
+  /* ===== 3. 업무 화면 (가상의 사내 포털) ===== */
+  #work { background: #e9eaec; color: #3a3d42; }
+  #work.on { display: flex; flex-direction: column; }
+  .w-top { height: 48px; background: #5b6068; color: #e4e6e9; display: flex; align-items: center; padding: 0 18px; gap: 18px; font-size: 13px; }
+  .w-top b { font-size: 14px; letter-spacing: .02em; }
+  .w-top .sp { flex: 1; }
+  .w-body { flex: 1; display: grid; grid-template-columns: 180px 1fr 440px; min-height: 0; }
+  .w-side { background: #f2f3f4; border-right: 1px solid #d3d5d8; padding: 18px 0; font-size: 13px; }
+  .w-side div { padding: 8px 22px; color: #555a61; }
+  .w-side div.on { background: #dcdee1; color: #2e3136; font-weight: 600; }
+  .w-side .cnt { float: right; font-size: 11px; background: #8c9198; color: #fff; padding: 0 6px; border-radius: 8px; }
+  .w-main { background: #fafafa; padding: 18px 22px; overflow: hidden; }
+  .w-main h4 { margin: 0 0 12px; font-size: 15px; color: #33363b; }
+  .mail { display: grid; grid-template-columns: 18px 130px 1fr 70px; gap: 10px; padding: 9px 4px; border-bottom: 1px solid #e3e4e6; font-size: 13px; color: #4b4f55; }
+  .mail.unread { font-weight: 600; color: #2b2e33; }
+  .mail .d { color: #9a9ea4; text-align: right; font-size: 12px; }
+  .mail .c { width: 12px; height: 12px; border: 1px solid #b4b8bd; margin-top: 4px; }
+  .w-right { background: #f2f3f4; border-left: 1px solid #d3d5d8; padding: 18px; display: flex; flex-direction: column; gap: 16px; font-size: 12px; }
+  .box { background: #fafafa; border: 1px solid #d8dadd; padding: 12px 14px; }
+  .box h5 { margin: 0 0 8px; font-size: 13px; color: #33363b; }
+  .sched { display: flex; gap: 10px; padding: 4px 0; color: #555a61; }
+  .sched span:first-child { color: #9a9ea4; width: 40px; }
+
+  /* 광고 배너: 이 화면에서 유일하게 색이 있는 곳 */
+  .ad { position: relative; aspect-ratio: 3 / 1; max-width: 100%; cursor: pointer; overflow: hidden; border: 1px solid #d8dadd; border-radius: 6px; background: #f6f1e6; }
+  .ad img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ad .ph { position: absolute; inset: 0; display: grid; place-items: center; color: #b07a4a; font-size: 12px; }
+    .ad .lbl { position: absolute; z-index: 2; top: 3px; right: 4px; font-size: 10px; background: rgba(255,255,255,.85); color: #777; padding: 0 5px; }
+  .ad:hover { outline: 2px solid #f0b37e; }
+
+  /* ===== 4. 유실물 포털 ===== */
+  #portal { background: #fff; position: relative; z-index: 1; color: var(--pg-fg);
+    --pg-fg: #222; --pg-muted: #6b7380; --pg-head: #1f2d4a;
+    --surf: rgba(255,255,255,1); --surf2: rgba(245,246,248,1); --photo-bg: rgba(230,232,236,1); }
+  /* 기억을 볼 때마다 색이 조금씩 바뀌도록 모든 색 변화에 천천히 전환 */
+  #portal, #portal * { transition: color 2.4s ease, background-color 2.4s ease, border-color 2.4s ease, opacity 2.4s ease, filter 2.4s ease; }
+  #portal .fadable { transition: opacity 2.4s ease, filter 2.4s ease; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  .util { border-bottom: 1px solid var(--line); font-size: 12px; color: var(--pg-muted); }
+  .util .wrap { display: flex; justify-content: flex-end; gap: 16px; height: 34px; align-items: center; }
+  header.gnb { border-bottom: 1px solid var(--line); }
+  header.gnb .wrap { display: flex; align-items: center; height: 72px; gap: 48px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--pg-head); }
+  .logo-mark { width: 30px; height: 30px; border: 2px solid var(--pg-head); border-radius: 50%; display: grid; place-items: center; }
+  .logo-mark span { width: 10px; height: 10px; background: var(--pg-head); border-radius: 2px; }
+  nav.menu { display: flex; gap: 36px; font-weight: 600; }
+  nav.menu a.on { color: var(--accent); }
+  .crumb { background: var(--surf2); border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .crumb .wrap { height: 40px; display: flex; align-items: center; gap: 6px; }
+  main { padding: 40px 0 80px; }
+  h1 { font-size: 26px; margin: 0 0 28px; color: var(--pg-head); }
+  h2 { font-size: 18px; margin: 48px 0 14px; color: var(--pg-head); }
+  h3 { font-size: 15px; margin: 24px 0 8px; }
+  .search { border-top: 2px solid var(--navy); border-bottom: 1px solid var(--line); background: var(--surf2); color: var(--text); padding: 22px 28px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 7px 0; flex-wrap: wrap; }
+  .row label.k { width: 80px; font-weight: 600; flex-shrink: 0; }
+  .search input, .search select { height: 36px; border: 1px solid var(--line-strong); background: var(--surf); color: var(--text); padding: 0 10px; font-family: inherit; font-size: 13px; border-radius: 2px; }
+  .search input[type=text] { width: 280px; }
+  .search select { min-width: 150px; }
+  .search .btns { display: flex; justify-content: center; margin-top: 14px; }
+  .btn { height: 40px; padding: 0 36px; background: var(--navy); color: #fff; border: 0; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 2px; }
+  .btn.line { background: var(--surf); color: var(--navy); border: 1px solid var(--navy); }
+  .btn.sm { height: 32px; padding: 0 16px; font-size: 12px; }
+  .notice { display: none; margin-top: 24px; padding: 12px 18px; border: 1px solid #c9d6ee; background: var(--surf2); color: var(--text); font-size: 13px; align-items: center; justify-content: space-between; }
+  .notice.on { display: flex; }
+  .result-head { display: flex; justify-content: space-between; align-items: flex-end; margin: 36px 0 10px; }
+  .count { font-size: 13px; }
+  .count b { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; }
+  /* 3×3 결과 카드 */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; border-top: 2px solid var(--pg-head); padding-top: 18px; }
+  .gcard { border: 1px solid var(--line); background: var(--surf); color: var(--text); }
+  .gcard.open { cursor: pointer; }
+  .gcard.open:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(31,45,74,.12); }
+  .gcard.locked { color: #aab0b9; }
+  .gphoto { aspect-ratio: 16 / 10; background: var(--photo-bg); border-bottom: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; font-size: 12px; color: var(--muted); }
+  .gphoto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gbody { padding: 12px 14px 14px; font-size: 13px; }
+  .gtitle { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .gno { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .gcard.seen .gtitle::after { content: "열람"; font-size: 11px; font-weight: 400; color: var(--accent); margin-left: auto; flex-shrink: 0; }
+  .gmeta { display: grid; grid-template-columns: 66px 1fr; row-gap: 2px; color: #4b525d; }
+  .gmeta dt { color: var(--muted); }
+  .gmeta dd { margin: 0; }
+  .gcard.locked .gmeta { color: #aab0b9; }
+  .gcard.pending { border-style: dashed; color: var(--muted); }
+  .gcard.pending .gphoto { background: transparent; color: #b4b9c1; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border: 1px solid var(--line-strong); color: var(--muted); border-radius: 2px; font-weight: 400; flex-shrink: 0; }
+  .empty { grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--muted); }
+  .paging { display: flex; justify-content: center; gap: 4px; margin-top: 22px; }
+  .paging span { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--line); font-size: 12px; color: var(--pg-muted); }
+  .paging span.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .guide { border: 1px solid var(--line); padding: 22px 28px; }
+  .guide ol { margin: 0; padding-left: 18px; }
+  .guide li { margin: 4px 0; color: var(--pg-fg); }
+  table.info { border-top: 2px solid var(--navy); font-size: 13px; background: var(--surf); color: var(--text); }
+  table.info th, table.info td { border-bottom: 1px solid var(--line); padding: 9px 12px; text-align: left; }
+  table.info th { background: var(--surf2); width: 18%; font-weight: 600; }
+  footer { border-top: 1px solid var(--line); background: var(--surf2); font-size: 12px; color: var(--muted); }
+  footer .wrap { padding: 26px 20px; }
+  footer .links { display: flex; gap: 18px; margin-bottom: 8px; color: #4a515c; font-weight: 600; }
+
+  /* 열람 창 */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+  .modal.show { display: flex; }
+  .modal-box { background: #fff; width: min(860px, 100%); border-top: 3px solid var(--navy); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--line); font-weight: 600; }
+  .modal-head button { border: 0; background: none; font-size: 20px; cursor: pointer; color: var(--muted); }
+  .modal-body { padding: 20px; }
+  .video-frame { aspect-ratio: 16 / 9; background: #111; display: grid; place-items: center; color: #888; font-size: 13px; }
+  .video-frame video { width: 100%; height: 100%; display: block; }
+  .meta { margin-top: 14px; font-size: 13px; }
+  .meta th { background: var(--bg-soft); width: 18%; }
+  .meta th, .meta td { border-bottom: 1px solid var(--line); padding: 7px 10px; text-align: left; }
+
+  /* 수령 팝업: 배경은 그대로, 작은 흰 행정 창만 */
+  .receipt { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 30; background: rgba(0,0,0,.35); }
+  .receipt.show { display: flex; }
+  .receipt-box { width: min(420px, calc(100% - 32px)); background: #fff; border-top: 3px solid var(--navy); box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  .receipt-box .hd { padding: 13px 18px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 14px; color: var(--navy); }
+  .receipt-box .bd { padding: 22px 18px; font-size: 14px; line-height: 1.8; }
+  .receipt-box .bd small { color: var(--muted); font-size: 12px; }
+  .receipt-box .ft { display: flex; justify-content: center; gap: 8px; padding: 0 18px 20px; }
+
+  /* ===== 5. 꿈 입력 ===== */
+  #dream { position: fixed; inset: 0; z-index: 40; background: transparent; display: none; place-items: center; opacity: 0; transition: opacity 2.2s ease; }
+  #dream.show { display: grid; }
+  #dream.vis { opacity: 1; }
+  .ask { position: relative; z-index: 1; text-align: center; color: #e4e4e7; transition: opacity 1.2s ease; }
+  .ask p { margin: 0 0 26px; font-size: 18px; letter-spacing: .04em; }
+  .ask input { width: min(520px, 80vw); background: transparent; border: 0; border-bottom: 1px solid #55565c; color: #f3f3f3; font-size: 22px; text-align: center; padding: 10px; font-family: inherit; outline: none; }
+  .ask input:focus { border-bottom-color: rgba(255,255,255,.75); }
+  .ask .hint { margin-top: 16px; font-size: 13px; color: #7a7b82; letter-spacing: .02em; }
+  .lit { position: absolute; text-align: center; opacity: 0; transition: opacity 2.6s ease; padding: 0 24px; pointer-events: none; }
+  .lit.on { opacity: 1; }
+  .lit .card { display: inline-block; padding: 34px 46px; border: 1px solid rgba(255,255,255,.8); background: radial-gradient(circle at 50% 40%, #2c2c30, #0e0e10 75%); box-shadow: 0 0 60px rgba(255,255,255,.12); color: #f4f4f4; font-size: 24px; font-weight: 600; max-width: 520px; word-break: keep-all; transition: box-shadow 2s ease, background 2s ease, color 2s ease; }
+  .lit .card.glow { box-shadow: 0 0 120px 30px rgba(255,255,255,.45); background: radial-gradient(circle at 50% 45%, #fff, #e8e8e8 80%); color: #111; }
+  /* 엔딩 후 업무 화면의 광고 자리 */
+  .ad.dreamad { cursor: default; background: #f6f1ea; display: grid; place-items: center; padding: 10px 14px; }
+  .ad.dreamad:hover { outline: none; }
+  .ad.dreamad .mine { font-size: 9px; color: #9a8f82; letter-spacing: .1em; position: absolute; top: 5px; left: 8px; }
+  .ad.dreamad .txt { font-size: 15px; font-weight: 600; color: #3a332c; text-align: center; word-break: keep-all; line-height: 1.5; }
+
+  /* ===== 기억 조각 레이어 (포털 뒤의 어둠) ===== */
+  #memory { position: fixed; inset: 0; z-index: 0; pointer-events: none; display: none; }
+  #memory.on { display: block; }
+  #lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  #lines path { fill: none; transition: stroke-dashoffset 1.6s ease; }
+  #lines { transition: opacity 2s ease; }
+  #lines .l-chain { stroke: rgba(255,255,255,.45); stroke-width: 1; transition: opacity 1.6s ease; }
+  body.asking #lines { opacity: .08; }
+  /* 꿈 입력 후 스르르 생기는 흰 선: 천천히 그려지면서 동시에 서서히 밝아진다 */
+  #lines .l-dream { stroke: rgba(255,255,255,.7); stroke-width: 1; opacity: 0; transition: stroke-dashoffset 4.5s cubic-bezier(.25,.1,.25,1), opacity 3s ease; }
+  #lines .l-dream.drawn { opacity: 1; }
+  .frag { position: absolute; transform: translate(-50%, -50%) scale(.85); opacity: 0; transition: opacity 1.4s ease, transform 1.4s ease, filter 2s ease; }
+  .frag.on { opacity: 1; transform: translate(-50%, -50%) scale(1); animation: drift var(--dur, 9s) ease-in-out var(--delay, 0s) infinite alternate; }
+  /* 둥둥 떠다니는 움직임 */
+  @keyframes drift {
+    0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+    50%  { transform: translate(-50%, -50%) translate(calc(var(--dx, 8px) * -.6), var(--dy, -10px)) rotate(calc(var(--rot, 1deg) * -1)); }
+    100% { transform: translate(-50%, -50%) translate(var(--dx, 8px), calc(var(--dy, -10px) * -.4)) rotate(var(--rot, 1deg)); }
+  }
+  /* 엔딩: 가운데로 빨려 들어가며 사라짐 */
+  .frag.absorb { animation: none; opacity: 0; transform: translate(-50%, -50%) scale(.15); transition: left 2.6s cubic-bezier(.55,0,.35,1), top 2.6s cubic-bezier(.55,0,.35,1), transform 2.6s cubic-bezier(.55,0,.35,1), opacity 2.6s ease-in; }
+  .frag .pic { width: 100%; height: 100%; overflow: hidden; background: var(--tone, #444); box-shadow: 0 0 24px rgba(0,0,0,.6); }
+  .frag .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .frag .pic.ph { background: linear-gradient(135deg, var(--tone, #555), rgba(0,0,0,.55)); display: grid; place-items: center; color: rgba(255,255,255,.55); font-size: 10px; text-align: center; padding: 4px; }
+  .frag .lbl { position: absolute; left: calc(100% + 6px); top: -2px; white-space: nowrap; font: 10px/1.3 ui-monospace, Menlo, monospace; color: rgba(255,255,255,.62); transition: opacity 1.5s ease; }
+  .frag .lbl::before { content: ""; display: inline-block; width: 6px; height: 6px; border: 1px solid #e0473c; margin-right: 5px; vertical-align: -1px; }
+  .frag.item .pic { outline: 1px solid rgba(255,255,255,.8); outline-offset: 3px; }
+  .frag.item .lbl { color: rgba(255,255,255,.8); }
+  /* 사진 무리에 합쳐진 꿈 카드 */
+  .frag.dream-frag .pic { background: radial-gradient(circle at 50% 40%, #2c2c30, #0e0e10 75%); display: grid; place-items: center; padding: 6px; }
+  .frag.dream-frag .dtext { color: #f4f4f4; font-size: 13px; font-weight: 600; text-align: center; word-break: keep-all; line-height: 1.35; }
+  /* 꿈을 입력하는 동안: 사진들은 흐릿하게 뒤로 물러나 있다 */
+  body.asking .frag.on { opacity: .12; filter: blur(5px) grayscale(.6) !important; transition: opacity 2s ease, filter 2s ease; }
+  body.asking .frag .lbl { opacity: 0; }
+  body.asking #dream::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 45% 35% at 50% 50%, rgba(0,0,0,.85), transparent 75%); pointer-events: none; }
+  body.converge .frag { filter: brightness(1.15) sepia(.25); }
+  /* 표에서 떠오르는 사진 */
+  .flyer { position: fixed; z-index: 26; pointer-events: none; overflow: hidden; background: #555; box-shadow: 0 8px 40px rgba(0,0,0,.5); transition: left 1.8s cubic-bezier(.6,0,.2,1), top 1.8s cubic-bezier(.6,0,.2,1), width 1.8s cubic-bezier(.6,0,.2,1), height 1.8s cubic-bezier(.6,0,.2,1); }
+  .flyer img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .logo .gone { opacity: 0; transition: opacity 1.6s ease; }
+  /* 뒤틀림: 비틀어진 자리에서 천천히 울렁인다 (transform과 따로 움직이도록 translate/rotate 속성 사용) */
+  .wobble { animation: wob var(--wd, 4s) ease-in-out var(--wdl, 0s) infinite; }
+  @keyframes wob {
+    0%, 100% { translate: 0 0; rotate: 0deg; }
+    50% { translate: var(--wbx, 0px) var(--wby, 0px); rotate: var(--wbr, 0deg); }
+  }
+  .wch { display: inline-block; white-space: pre; }
+  @media (prefers-reduced-motion: reduce) { .wobble { animation: none; } }
+
+  @media (max-width: 900px) {
+    .w-body { grid-template-columns: 1fr; }
+    .w-side, .w-main { display: none; }
+    nav.menu { display: none; }
+    .search input[type=text] { width: 100%; }
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  }
+  @media (max-width: 520px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 1. 시작 화면 (브라우저 자동재생 제한 때문에 한 번 클릭이 필요) -->
+<section class="stage on" id="start"><p>클릭하여 시작</p></section>
+
+<!-- 2. 오프닝 영상 -->
+<section class="stage" id="opening"></section>
+
+<!-- 3. 업무 화면 -->
+<section class="stage" id="work">
+  <div class="w-top"><b>WORKSPACE</b><span>메일</span><span>결재</span><span>일정</span><span>게시판</span><span class="sp"></span><span id="clock">23:47</span><span>로그아웃</span></div>
+  <div class="w-body">
+    <aside class="w-side">
+      <div class="on">받은메일함 <span class="cnt">128</span></div>
+      <div>보낸메일함</div>
+      <div>임시보관함</div>
+      <div>결재 대기 <span class="cnt">6</span></div>
+      <div>내 일정</div>
+      <div>공지사항</div>
+    </aside>
+    <section class="w-main">
+      <h4>받은메일함</h4>
+      <div id="mails"></div>
+    </section>
+    <aside class="w-right">
+      <div class="box">
+        <h5>오늘 일정</h5>
+        <div class="sched"><span>09:00</span><span>주간 실적 회의</span></div>
+        <div class="sched"><span>14:00</span><span>거래처 미팅 (외근)</span></div>
+        <div class="sched"><span>18:30</span><span>보고서 최종 제출</span></div>
+        <div class="sched"><span>21:00</span><span>수정본 재제출</span></div>
+      </div>
+      <!-- 광고 배너: 오른쪽 칸, 3:1 가로 배너 -->
+      <div class="ad" id="ad">
+        <img src="assets/img/banner.png" alt="잃어버린 꿈, 찾아드립니다." onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='assets/img/banner.jpg'}else{this.remove()}">
+        <div class="ph">광고 이미지 자리 (assets/img/banner.png, 가로:세로 = 3:1)</div>
+        <span class="lbl">AD</span>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- 사이트 양식을 울렁이게 비트는 필터 (기억을 볼수록 세짐) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="warp" x="-10%" y="-30%" width="120%" height="160%">
+    <feTurbulence id="warpNoise" type="fractalNoise" baseFrequency="0.011 0.045" numOctaves="2" seed="7"/>
+    <feDisplacementMap id="warpMap" in="SourceGraphic" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<!-- 기억 조각 레이어: 포털 뒤에 있다가, 포털이 어두워질수록 드러남 -->
+<div id="memory"><svg id="lines" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+<!-- 4. 유실물 포털 -->
+<section class="stage" id="portal">
+  <div class="util fadable" data-fade="4"><div class="wrap"><a href="#">로그인</a><a href="#">회원가입</a><a href="#">고객센터</a></div></div>
+  <header class="gnb">
+    <div class="wrap">
+      <a class="logo" href="#"><span class="logo-mark fadable" data-fade="5"><span></span></span><span id="logoText">○○ 유실물 보관센터</span></a>
+      <nav class="menu fadable" data-fade="5"><a href="#">센터 소개</a><a href="#" class="on">유실물 조회</a><a href="#">분실 신고</a><a href="#">수령 안내</a></nav>
+    </div>
+  </header>
+  <div class="crumb fadable" data-fade="4"><div class="wrap">홈 &gt; 습득물 안내 &gt; 유실물 조회</div></div>
+  <main>
+    <div class="wrap">
+      <h1 class="fadable" data-fade="6">유실물 조회</h1>
+      <form class="search fadable" data-fade="3" id="searchForm" onsubmit="return false;">
+        <div class="row"><label class="k">날짜</label><input type="date" id="dateFrom" value="1995-01-01"> ~ <input type="date" id="dateTo" value="2026-10-16"></div>
+        <div class="row"><label class="k">물품종류</label><select id="cat1"><option value="">대분류 전체</option></select><select id="cat2" disabled><option value="">소분류 전체</option></select></div>
+        <div class="row"><label class="k" for="keyword">물품명</label><input type="text" id="keyword" placeholder="물품명을 입력하세요"></div>
+        <div class="row"><label class="k">보관장소</label><select id="room"><option value="">보관실 전체</option></select></div>
+        <div class="btns"><button class="btn" id="searchBtn" type="button">조회하기</button></div>
+      </form>
+
+      <div class="notice" id="notice"><span>수령 가능한 분실물이 7건 있습니다.</span><button class="btn sm" type="button" id="noticeBtn">수령 신청</button></div>
+
+      <div class="result-head">
+        <div class="count">총 <b id="count">0</b>건</div>
+        <button class="btn line sm" type="button" id="resetBtn">초기화</button>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="paging fadable" data-fade="4"><span>&lt;</span><span class="on">1</span><span>&gt;</span></div>
+
+      <h2 class="fadable" data-fade="2">습득물 이용안내</h2>
+      <div class="guide fadable" data-fade="2">
+        <ol>
+          <li>습득물은 습득 시점을 기준으로 각 보관실에 분류하여 보관합니다.</li>
+          <li>물품 사진은 습득 당시의 상태 그대로 촬영되었으며, 실제 물품과 차이가 있을 수 있습니다.</li>
+          <li>본인 소유의 물품이 확인된 경우, 물품을 선택하여 습득 경위를 열람하신 후 수령 신청이 가능합니다.</li>
+          <li>습득물은 보관 기간 경과 후에도 폐기되지 않으며, 수령 시까지 계속 보관됩니다.</li>
+          <li>신규 습득물은 등록까지 시간이 소요될 수 있사오니 양해 바랍니다.</li>
+        </ol>
+      </div>
+      <h3 class="fadable" data-fade="2">보관실 안내</h3>
+      <table class="info fadable" data-fade="2">
+        <tr><th>제1·2보관실</th><td>완구류</td><th>제3보관실</th><td>신발류</td></tr>
+        <tr><th>제4보관실</th><td>생활용품</td><th>제5보관실</th><td>도서류</td></tr>
+        <tr><th>제6보관실</th><td>기호품</td><th>제7보관실</th><td>주류</td></tr>
+      </table>
+    </div>
+  </main>
+  <footer class="fadable" data-fade="2">
+    <div class="wrap">
+      <div class="links"><a href="#">이용약관</a><a href="#">개인정보처리방침</a><a href="#">사이트맵</a></div>
+      본 사이트는 습득물 정보 제공을 위해 운영됩니다.<br>© ○○ 유실물 보관센터. All rights reserved.
+    </div>
+  </footer>
+</section>
+
+<!-- 열람 창 -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="modal-head"><span id="modalTitle">습득 경위 열람</span><button type="button" id="closeBtn" aria-label="닫기">×</button></div>
+    <div class="modal-body"><div class="video-frame" id="videoFrame"></div><table class="meta"><tbody id="modalMeta"></tbody></table></div>
+  </div>
+</div>
+
+<!-- 수령 팝업 -->
+<div class="receipt" id="receipt">
+  <div class="receipt-box">
+    <div class="hd">분실물 수령 안내</div>
+    <div class="bd">열람하신 분실물 7건에 대한 본인 확인이 완료되었습니다.<br>분실물을 수령하시겠습니까?<br><small>수령 후에는 보관 목록에서 삭제됩니다.</small></div>
+    <div class="ft"><button class="btn line sm" type="button" id="receiptCancel">취소</button><button class="btn sm" type="button" id="receiptOk">수령하기</button></div>
+  </div>
+</div>
+
+<!-- 꿈 입력 -->
+<div id="dream">
+  <div class="ask" id="ask">
+    <p>아직 잃어버리지 않은 꿈이 있나요?</p>
+    <input type="text" id="dreamInput" maxlength="60" autocomplete="off">
+    <div class="hint">이 꿈은 보관되지 않고, 당신에게 돌려드립니다.</div>
+  </div>
+  <div class="lit" id="lit"><div class="card" id="dreamCard"></div></div>
+</div>
+
+<div id="flash"></div>
+
+<script>
+/* ===== 데이터: 문구를 바꾸려면 여기만 수정 =====
+   오프닝 영상:  assets/video/00_opening.mp4
+   광고 이미지:  assets/img/banner.jpg
+   물품 사진:    assets/img/01_item.jpg ~ 07_item.jpg
+   기억 영상:    assets/video/01.mp4 ~ 07.mp4 */
+const ITEMS = [
+  { no: 1, name: "봉제 인형 (갈색, 귀 봉제선 터짐)", cat1: "완구", cat2: "인형", place: "주택 안방 이불 속", room: "제1보관실", date: "1999-12-24" },
+  { no: 2, name: "장난감 포크레인 (노란색)", cat1: "완구", cat2: "중장비 모형", place: "아파트 놀이터 모래밭", room: "제2보관실", date: "2003-05-05" },
+  { no: 3, name: "운동화 (흰색, 한 켤레)", cat1: "신발", cat2: "운동화", place: "초등학교 옥상", room: "제3보관실", date: "2007-06-08" },
+  { no: 4, name: "회초리 (나무, 길이 약 60cm)", cat1: "생활용품", cat2: "기타", place: "주택 복도 끝", room: "제4보관실", date: "2010-03-19" },
+  { no: 5, name: "문제집 (수리 영역, 필기 다수)", cat1: "도서", cat2: "수험서", place: "독서실 24번 좌석", room: "제5보관실", date: "2014-10-02" },
+  { no: 6, name: "담배 (1갑, 2개비 남음)", cat1: "기호품", cat2: "담배", place: "경계 초소", room: "제6보관실", date: "2017-08-14" },
+  { no: 7, name: "소주 (녹색 병, 개봉됨)", cat1: "주류", cat2: "소주", place: "회사 앞 편의점 테이블", room: "제7보관실", date: "2022-11-25" }
+];
+const MAILS = [
+  ["팀장", "[긴급] 3분기 실적 보고서 재검토 요청", "23:12", true],
+  ["인사팀", "야근 식대 신청 마감 안내", "22:40", true],
+  ["거래처 담당", "RE: RE: RE: 견적서 수정 건", "21:58", true],
+  ["팀장", "내일 오전 회의 자료 미리 공유 부탁", "20:31", false],
+  ["총무팀", "사무실 공조 가동 시간 변경 안내", "18:05", false],
+  ["시스템", "비밀번호 변경 주기가 도래했습니다", "17:44", false],
+  ["팀장", "RE: 보고서 수정본", "16:20", false],
+  ["경영지원", "연말정산 서류 제출 안내", "15:02", false],
+  ["팀장", "보고서 다시 봐주세요", "11:47", false]
+];
+
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, "0");
+const fmt = d => d.replace(/-/g, ".");
+let viewed = 0;      // 열람한 개수 (1번부터 순서대로)
+let ended = false;   // 꿈 입력 단계 진입 여부
+
+/* ----- 단계 전환 ----- */
+function show(id) {
+  document.querySelectorAll(".stage").forEach(s => s.classList.toggle("on", s.id === id));
+  $("memory").classList.toggle("on", id === "portal");
+  window.scrollTo(0, 0);
+}
+
+/* ----- 1~3. 시작 → 오프닝 → 업무 화면 ----- */
+$("start").addEventListener("click", playOpening);
+
+function playOpening() {
+  show("opening");
+  const box = $("opening");
+  box.innerHTML = "";
+  const v = document.createElement("video");
+  v.src = "assets/video/00_opening.mp4";
+  v.playsInline = true;
+  v.onended = toWork;
+  v.onerror = () => {   // 영상이 아직 없을 때: 자리 표시 후 넘어감
+    box.innerHTML = '<div class="ph">오프닝 영상 자리 (assets/video/00_opening.mp4)</div>';
+    setTimeout(toWork, 2500);
+  };
+  box.appendChild(v);
+  v.play().catch(() => {});
+}
+
+// 영상 마지막의 하얀 화면을 이어받아, 업무 화면이 서서히 나타남
+function toWork() {
+  const f = $("flash");
+  f.classList.remove("slow");
+  f.classList.add("on");
+  setTimeout(() => {
+    const v = $("opening").querySelector("video");
+    if (v) v.pause();
+    show("work");
+    f.classList.add("slow");
+    f.classList.remove("on");
+  }, 1400);
+}
+
+$("mails").innerHTML = MAILS.map(([from, subj, time, unread]) =>
+  `<div class="mail${unread ? " unread" : ""}"><span class="c"></span><span>${from}</span><span>${subj}</span><span class="d">${time}</span></div>`
+).join("");
+
+// 광고 클릭 → 유실물 포털
+$("ad").addEventListener("click", () => { if (ended) return; show("portal"); search(); });
+
+/* ----- 4. 유실물 포털 ----- */
+const cat1 = $("cat1"), cat2 = $("cat2"), room = $("room");
+[...new Set(ITEMS.map(i => i.cat1))].forEach(c => cat1.add(new Option(c, c)));
+ITEMS.forEach(i => room.add(new Option(i.room, i.room)));
+cat1.addEventListener("change", () => {
+  cat2.length = 1;
+  ITEMS.filter(i => i.cat1 === cat1.value).forEach(i => cat2.add(new Option(i.cat2, i.cat2)));
+  cat2.disabled = !cat1.value;
+});
+
+function photo(item) {
+  const box = document.createElement("div");
+  box.className = "gphoto";
+  const img = new Image();
+  img.alt = item.name;
+  img.src = `assets/img/${pad(item.no)}_item.jpg`;
+  img.onerror = () => { img.remove(); box.textContent = "사진 준비중"; };
+  box.appendChild(img);
+  return box;
+}
+
+// 3×3 카드: 습득일 순으로 7칸, 남는 2칸은 "등록 예정" 빈 칸
+function render(list) {
+  const grid = $("grid");
+  grid.innerHTML = "";
+  $("count").textContent = list.length;
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>';
+    return;
+  }
+  [...list].sort((a, b) => a.no - b.no).forEach(item => {
+    const canOpen = item.no <= viewed + 1;
+    const card = document.createElement("article");
+    card.dataset.no = item.no;
+    card.className = "gcard " + (canOpen ? "open" : "locked") + (item.no <= viewed ? " seen" : "");
+    card.appendChild(photo(item));
+    const body = document.createElement("div");
+    body.className = "gbody";
+    body.innerHTML = `
+      <div class="gtitle"><span class="gno">${pad(item.no)}</span><span class="tag">${item.cat1}</span><span>${item.name}</span></div>
+      <dl class="gmeta">
+        <dt>습득 장소</dt><dd>${item.place}</dd>
+        <dt>보관장소</dt><dd>${item.room}</dd>
+        <dt>습득일</dt><dd>${fmt(item.date)}</dd>
+      </dl>`;
+    card.appendChild(body);
+    if (canOpen) card.addEventListener("click", () => openItem(item));
+    grid.appendChild(card);
+    // 이미 본 유실물은 점점 반투명해진다: 방금 본 것은 살짝, 오래전에 본 것일수록 더 흐리게
+    if (viewed >= 2 && item.no <= viewed) {
+      const age = viewed - item.no;
+      const fade = a => ({ photo: Math.max(.12, .55 - a * .1), body: Math.max(.3, .8 - a * .1) });
+      const from = (age === 0 || (viewed === 2 && age === 1)) ? { photo: 1, body: 1 } : fade(age - 1), to = fade(age);
+      const ph = card.querySelector(".gphoto");
+      ph.style.opacity = from.photo; body.style.opacity = from.body;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        ph.style.opacity = to.photo; body.style.opacity = to.body;
+      }));
+    }
+  });
+  if (list.length === ITEMS.length) {
+    for (let i = list.length; i < 9; i++) {
+      const p = document.createElement("article");
+      p.className = "gcard pending";
+      p.innerHTML = `<div class="gphoto">등록 예정</div>
+        <div class="gbody"><div class="gtitle"><span class="gno">${pad(i + 1)}</span><span>—</span></div>
+        <dl class="gmeta"><dt>습득 장소</dt><dd>—</dd><dt>보관장소</dt><dd>—</dd><dt>습득일</dt><dd>—</dd></dl></div>`;
+      grid.appendChild(p);
+    }
+  }
+  if (typeof shown !== "undefined" && shown) applyWarp(stage(shown));   // 다시 그린 카드에도 뒤틀림 유지
+}
+
+function search() {
+  const from = $("dateFrom").value, to = $("dateTo").value, kw = $("keyword").value.trim();
+  render(ITEMS.filter(i =>
+    (!from || i.date >= from) && (!to || i.date <= to) &&
+    (!cat1.value || i.cat1 === cat1.value) &&
+    (!cat2.value || i.cat2 === cat2.value) &&
+    (!room.value || i.room === room.value) &&
+    (!kw || i.name.includes(kw))
+  ));
+}
+
+function openItem(item) {
+  $("modalTitle").textContent = `습득 경위 열람 — ${item.name}`;
+  const frame = $("videoFrame");
+  frame.innerHTML = "";
+  const v = document.createElement("video");
+  v.src = `assets/video/${pad(item.no)}.mp4`;
+  v.controls = true;
+  v.autoplay = true;
+  v.onerror = () => { frame.textContent = `영상 자리 (assets/video/${pad(item.no)}.mp4)`; };
+  v.onended = closeModal;
+  frame.appendChild(v);
+  $("modalMeta").innerHTML = `
+    <tr><th>물품명</th><td>${item.name}</td></tr>
+    <tr><th>습득 장소</th><td>${item.place}</td></tr>
+    <tr><th>보관장소</th><td>${item.room}</td></tr>
+    <tr><th>습득일</th><td>${fmt(item.date)}</td></tr>`;
+  $("modal").classList.add("show");
+  if (item.no === viewed + 1) viewed++;
+}
+
+function closeModal() {
+  const v = document.querySelector("#videoFrame video");
+  if (v) v.pause();
+  $("modal").classList.remove("show");
+  search();
+  if (shown < viewed && viewed >= 2) {
+    // 방금 본 물건이 표에서 빠져나와 어둠 속으로 떠오른다 (첫 번째 기억 뒤에는 아무 변화 없음)
+    while (shown < viewed - 1) revealItem(shown + 1, false);
+    revealItem(viewed, true);
+    if (viewed >= ITEMS.length && !ended) setTimeout(showReceipt, 4200);
+  } else if (viewed >= ITEMS.length && !ended) {
+    setTimeout(showReceipt, 900);
+  }
+}
+
+/* ----- 5. 수령 팝업 → 꿈 입력 ----- */
+function showReceipt() { $("receipt").classList.add("show"); }
+
+$("receiptCancel").addEventListener("click", () => {
+  $("receipt").classList.remove("show");
+  $("notice").classList.add("on");   // 나중에 다시 신청할 수 있게
+});
+$("noticeBtn").addEventListener("click", showReceipt);
+$("receiptOk").addEventListener("click", startDream);
+
+function startDream() {
+  ended = true;
+  $("receipt").classList.remove("show");
+  // 유실물 센터가 완전히 사라지고, 기억 조각만 남는다
+  const p = $("portal");
+  p.style.opacity = 0;
+  p.style.pointerEvents = "none";
+  document.body.classList.add("asking");
+  const d = $("dream");
+  d.classList.add("show");
+  requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add("vis")));
+  setTimeout(() => $("dreamInput").focus(), 2200);
+}
+
+// 화면 어디를 눌러도 입력칸에 커서가 가도록
+$("dream").addEventListener("click", () => {
+  if ($("ask").style.display !== "none") $("dreamInput").focus();
+});
+
+$("dreamInput").addEventListener("keydown", e => {
+  if (e.key !== "Enter" || e.isComposing) return;   // 한글 조합 중 Enter 무시
+  const text = $("dreamInput").value.trim();
+  if (!text) return;
+  $("dreamCard").textContent = text;
+  $("ask").style.opacity = 0;
+  $("dreamInput").blur();
+  document.body.classList.remove("asking");   // 사진들이 다시 또렷해진다
+  setTimeout(() => {
+    $("ask").style.display = "none";
+    $("lit").classList.add("on");
+    setTimeout(converge, 2600);
+  }, 1200);
+});
+
+/* ===== 기억 조각과 포털의 변화 =====
+   기억 조각 이미지: assets/img/01_frag1.jpg ~ 01_frag3.jpg (물건마다 3장, 영상 캡처)
+   없으면 색이 든 빈 조각으로 대신 표시됨 */
+const FRAG_COUNT = 3;   // 물건 사진 1장 + 장면 조각 3장 = 기억 하나당 4장
+// 나이마다 조각의 바탕색 (이미지가 없을 때) — 어릴수록 따뜻하고, 클수록 회색
+const TONES = ["#c98a5e", "#d4b04a", "#6a9cc4", "#8a3b34", "#6f7a72", "#55585c", "#3f4642"];
+let shown = 0;          // 어둠 속에 떠오른 기억 개수
+let layout = null;      // 조각 위치 (화면 비율 기준)
+const nodes = [];       // 화면에 만든 조각 요소들
+
+function rand(seed) {   // 매번 같은 배치가 나오도록 고정된 난수
+  return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+// 레퍼런스처럼 사진들이 화면 가운데에 둥근 덩어리로 모인다.
+// 가운데 작은 자리(꿈이 놓일 곳)만 비우고, 사진끼리는 겹치지 않게.
+// 좌표는 기준 화면 1440×900에서 '가운데로부터의 거리(px)'로 저장한다.
+const RING_R = 420;   // 덩어리의 반지름
+function buildLayout() {
+  const r = rand(1995);
+  const PAD = 22;   // 둥둥 떠다녀도 서로 닿지 않을 만큼의 간격
+  const placed = [];
+  const box = (dx, dy, w) => { const h = w * .68; return { l: dx - w / 2, r: dx + w / 2, t: dy - h / 2, b: dy + h / 2 }; };
+  const inCircle = b => [[b.l, b.t], [b.r, b.t], [b.l, b.b], [b.r, b.b]].every(([x, y]) => Math.hypot(x, y) < RING_R);
+  const clearOfDream = b => b.r < -285 || b.l > 285 || b.b < -78 || b.t > 78;   // 꿈 입력 문구가 들어갈 자리
+  const fits = b => inCircle(b) && clearOfDream(b) &&
+    placed.every(p => b.r + PAD < p.l || p.r + PAD < b.l || b.b + PAD < p.t || p.b + PAD < b.t);
+  const sector = (2 * Math.PI) / ITEMS.length;
+
+  // 1) 기억 7개를 원 둘레의 각자 구역에
+  const items = ITEMS.map((_, i) => {
+    const a = -Math.PI / 2 + i * sector;
+    const it = { dx: Math.cos(a) * 250, dy: Math.sin(a) * 250, w: 124, a, frags: [] };
+    placed.push(box(it.dx, it.dy, it.w));
+    return it;
+  });
+  // 2) 기억마다 장면 조각 3장을 같은 구역 안 빈자리에
+  for (let f = 0; f < FRAG_COUNT; f++) {
+    items.forEach(it => {
+      let w = 94;
+      for (let t = 0; t < 4000; t++) {
+        if (t % 500 === 499) w -= 6;             // 자리가 없으면 조금 작게
+        const spread = t < 1000 ? .62 : 1.6;      // 처음엔 자기 구역, 안 되면 넓게
+        const a = it.a + (r() - .5) * sector * spread * 2;
+        const d = 120 + r() * (RING_R - 150);
+        const dx = Math.cos(a) * d, dy = Math.sin(a) * d;
+        const b = box(dx, dy, w);
+        if (fits(b)) { placed.push(b); it.frags.push({ dx, dy, w }); break; }
+      }
+    });
+  }
+  return items;
+}
+
+function makeFrag(x, y, w, src, label, tone, isItem) {
+  const el = document.createElement("div");
+  el.className = "frag" + (isItem ? " item" : "");
+  const sgn = () => (Math.random() < .5 ? -1 : 1);
+  el.style.cssText = `--tone:${tone};--dx:${sgn() * (6 + Math.random() * 8)}px;--dy:${sgn() * (8 + Math.random() * 10)}px;--rot:${sgn() * (.6 + Math.random() * 1.2)}deg;--dur:${5 + Math.random() * 4}s;--delay:-${Math.random() * 8}s`;
+  const pic = document.createElement("div");
+  pic.className = "pic";
+  if (src) {
+    const img = new Image();
+    img.src = src;
+    img.onerror = () => { img.remove(); pic.classList.add("ph"); };
+    pic.appendChild(img);
+  }
+  const lbl = document.createElement("span");
+  lbl.className = "lbl";
+  lbl.textContent = label;
+  el.append(pic, lbl);
+  el.dataset.x = x; el.dataset.y = y; el.dataset.w = w;
+  $("memory").appendChild(el);
+  placeFrag(el);
+  return el;
+}
+
+const scale = () => Math.min(innerWidth / 1440, innerHeight / 900);
+function center(el) { const s = scale(); return [innerWidth / 2 + el.dataset.x * s, innerHeight / 2 + el.dataset.y * s]; }
+
+function addLine(a, b, cls, bend = .18) {
+  const [x1, y1] = a, [x2, y2] = b;
+  const mx = (x1 + x2) / 2 - (y2 - y1) * bend, my = (y1 + y2) / 2 + (x2 - x1) * bend;
+  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", `M${x1},${y1} Q${mx},${my} ${x2},${y2}`);
+  p.setAttribute("class", cls);
+  $("lines").appendChild(p);
+  const len = p.getTotalLength();
+  p.style.strokeDasharray = cls === "l-chain" ? "3 5" : len;
+  p.style.strokeDashoffset = cls === "l-chain" ? 0 : len;
+  return p;
+}
+const drawLine = (p, delay) => setTimeout(() => { p.style.strokeDashoffset = 0; p.classList.add("drawn"); }, delay);
+
+function placeFrag(el) {
+  const s = scale(), w = +el.dataset.w * s, [cx, cy] = center(el);
+  el.style.left = cx + "px";
+  el.style.top = cy + "px";
+  el.style.width = w + "px";
+  el.style.height = w * .68 + "px";
+}
+
+// i번째 기억을 어둠 속에 띄운다 (animate: 표에서 날아오르는 연출 여부)
+function revealItem(no, animate) {
+  if (!layout) layout = buildLayout();
+  const item = ITEMS[no - 1], L = layout[no - 1], tone = TONES[no - 1];
+  shown = Math.max(shown, no);
+  applyDecay(shown);
+
+  const label = `No.${String(no).padStart(4, "0")} · ${fmt(item.date)}`;
+  const card = makeFrag(L.dx, L.dy, L.w, `assets/img/${pad(no)}_item.jpg`, label, tone, true);
+  // 나이가 들수록 색이 빠진다
+  card.style.filter = `saturate(${1 - (no - 1) * .13})`;
+  const node = { card, frags: [] };
+  nodes[no - 1] = node;
+
+  const start = animate ? 1900 : 0;
+  if (animate) flyFromRow(no, card);
+  setTimeout(() => card.classList.add("on"), animate ? 1750 : 0);
+
+  L.frags.forEach((f, k) => {
+    const [px, py] = [Math.round((f.dx + 720) * 1.78), Math.round((f.dy + 450) * 1.78)];
+    const fr = makeFrag(f.dx, f.dy, f.w, `assets/img/${pad(no)}_frag${k + 1}.jpg`, `x ${px} y ${py}`, tone, false);
+    fr.style.filter = card.style.filter;
+    node.frags.push(fr);
+    setTimeout(() => fr.classList.add("on"), start + 250 + k * 260);
+  });
+  // 꿈을 입력하기 전까지 사진들 사이에는 선이 없다
+}
+
+// 표의 사진이 빠져나와 기억 조각 자리로 날아간다
+function flyFromRow(no, card) {
+  const row = document.querySelector(`#grid .gcard[data-no="${no}"] .gphoto`);
+  const r = row ? row.getBoundingClientRect() : { left: innerWidth / 2 - 40, top: innerHeight / 2 - 30, width: 80, height: 60 };
+  const fly = document.createElement("div");
+  fly.className = "flyer";
+  fly.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:${TONES[no - 1]}`;
+  const img = new Image();
+  img.src = `assets/img/${pad(no)}_item.jpg`;
+  img.onerror = () => img.remove();
+  fly.appendChild(img);
+  document.body.appendChild(fly);
+  const w = parseFloat(card.style.width), h = parseFloat(card.style.height);
+  const [cx, cy] = center(card);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    Object.assign(fly.style, { left: cx - w / 2 + "px", top: cy - h / 2 + "px", width: w + "px", height: h + "px" });
+  }));
+  setTimeout(() => { fly.style.transition = "opacity .5s ease"; fly.style.opacity = 0; }, 1800);
+  setTimeout(() => fly.remove(), 2400);
+}
+
+// 본 기억 수(d)에 따라 유실물 포털이 어두워지고 지워진다
+const LOGO = "○○ 유실물 보관센터";
+const LOGO_ORDER = [...LOGO].map((_, i) => i).sort((a, b) => ((a * 7) % 11) - ((b * 7) % 11));
+// 첫 번째 기억 뒤에는 아무것도 바뀌지 않고, 2~7번째 여섯 번에 걸쳐 고르게 변한다.
+// stage: 본 기억 수 d를 0~7 사이 변화 단계로 바꾼 값 (d=1 → 0, d=7 → 7)
+const stage = d => Math.max(0, Math.min(d, 7) - 1) * 7 / 6;
+// 단계별 값 표에서 소수 단계의 값을 사이로 계산
+const at = (arr, x) => { const i = Math.min(Math.floor(x), arr.length - 2), f = x - i; return arr[i] + (arr[i + 1] - arr[i]) * f; };
+function applyDecay(seen) {
+  const d = stage(seen);
+  const t = d / 7;
+  // 배경은 매 단계 비슷한 폭으로 어두워지고 투명해진다
+  const c = Math.round(255 - 242 * Math.pow(t, .9));
+  const alpha = 1 - t * .72;
+  const P = $("portal");
+  P.style.backgroundColor = `rgba(${c},${c},${Math.min(255, c + 2)},${alpha})`;
+  // 카드·검색창 같은 칸은 흰색을 유지한 채 조금씩 투명해진다 (글자는 계속 읽힌다)
+  const SURF = at([1, .95, .88, .8, .72, .64, .57, .5], d).toFixed(3);
+  P.style.setProperty("--surf", `rgba(255,255,255,${SURF})`);
+  P.style.setProperty("--surf2", `rgba(245,246,248,${SURF})`);
+  P.style.setProperty("--photo-bg", `rgba(230,232,236,${SURF})`);
+  // 배경 위에 바로 놓인 글자는 배경이 어두워지는 만큼 조금씩 밝아진다
+  const FG = Math.round(at([34, 34, 52, 168, 196, 208, 213, 213], d));
+  const MU = Math.round(at([107, 107, 112, 140, 146, 140, 132, 124], d));
+  const mixHead = k => `rgb(${Math.round(31 + (190 - 31) * k)},${Math.round(45 + (199 - 45) * k)},${Math.round(74 + (214 - 74) * k)})`;
+  P.style.setProperty("--pg-fg", `rgb(${FG},${FG},${FG + 4})`);
+  P.style.setProperty("--pg-muted", `rgb(${MU},${MU + 3},${MU + 10})`);
+  P.style.setProperty("--pg-head", mixHead(at([0, 0, .12, .7, .85, .95, 1, 1], d)));
+  document.querySelectorAll("#portal .fadable").forEach(el => {
+    const s = +el.dataset.fade;
+    el.style.opacity = d < s ? 1 : Math.max(.05, 1 - (d - s + 1) * .32);
+    el.dataset.blur = d < s ? 0 : Math.min(1.5, (d - s + 1) * .4);
+  });
+  // 로고 글자가 하나씩 빠진다 (5번째 기억부터)
+  const gone = d < 5 ? 0 : Math.round((d - 4) / 3 * LOGO.length);
+  const hide = new Set(LOGO_ORDER.slice(0, gone));
+  $("logoText").innerHTML = [...LOGO].map((ch, i) => `<span class="${hide.has(i) ? "gone" : ""}">${ch === " " ? "&nbsp;" : ch}</span>`).join("");
+  applyWarp(d);
+}
+
+/* ===== 사이트 양식이 뒤틀리는 효과 =====
+   2번째 기억부터: 줄과 칸이 조금씩 기울고 어긋나며, 글자가 물결처럼 울렁인다
+   3번째부터: 비틀어진 칸들이 천천히 흔들린다
+   5번째부터: 글자 하나하나가 제자리를 벗어난다 */
+const WARP_SCALE = [0, 0, 3, 6, 9, 13, 17, 22];   // 본 기억 수별 울렁임 세기
+const WARP_TARGETS = [
+  "#portal .util", "#portal header.gnb .wrap", "#portal .crumb", "#portal h1",
+  "#portal .search .row", "#portal .search .btns", "#portal .result-head", "#portal .gcard",
+  "#portal .paging", "#portal h2", "#portal .guide li", "#portal h3", "#portal table.info", "#portal footer .wrap"
+];
+const LETTER_TARGETS = ["#portal h1", "#portal .gtitle > span:last-child", "#portal .gmeta dd", "#portal .guide li", "#portal .crumb .wrap"];
+
+function splitLetters(el) {
+  if (el.dataset.split) return;
+  el.dataset.split = "1";
+  const text = el.textContent;
+  el.textContent = "";
+  [...text].forEach(ch => { const s = document.createElement("span"); s.className = "wch"; s.textContent = ch; el.appendChild(s); });
+}
+
+function applyWarp(d) {
+  const W = Math.min(d, 7);   // 이미 stage()로 바뀐 단계 값
+  $("warpMap").setAttribute("scale", at(WARP_SCALE, W).toFixed(1));
+  const k = Math.pow(Math.max(0, (W - 1) / 6), 1.5);   // 0 → 1
+  document.querySelectorAll(WARP_TARGETS.join(",")).forEach((el, i) => {
+    const r = rand(i * 97 + 13), a = r(), b = r(), c = r(), e = r(), f = r();
+    const rot = (a - .5) * 2 * 6 * k, tx = (b - .5) * 2 * 34 * k, ty = (c - .5) * 2 * 12 * k, sk = (e - .5) * 2 * 10 * k;
+    el.style.transition = "transform 2.4s ease, opacity 2.4s ease, filter 2.4s ease, color 2.4s ease, background-color 2.4s ease, border-color 2.4s ease";
+    el.style.transform = k ? `translate(${tx}px, ${ty}px) rotate(${rot}deg) skewX(${sk}deg)` : "";
+    const blur = +(el.dataset.blur || el.closest(".fadable")?.dataset.blur || 0);
+    el.style.filter = W >= 2 ? `url(#warp)${blur ? ` blur(${blur}px)` : ""}` : (blur ? `blur(${blur}px)` : "");
+    if (W >= 3) {
+      el.classList.add("wobble");
+      el.style.setProperty("--wd", (3 + f * 3).toFixed(2) + "s");
+      el.style.setProperty("--wdl", (-f * 5).toFixed(2) + "s");
+      el.style.setProperty("--wbx", ((b - .5) * 10 * k).toFixed(1) + "px");
+      el.style.setProperty("--wby", ((a - .5) * 8 * k).toFixed(1) + "px");
+      el.style.setProperty("--wbr", ((c - .5) * 3 * k).toFixed(2) + "deg");
+    } else {
+      el.classList.remove("wobble");
+    }
+  });
+  // 글자 하나하나가 제자리를 벗어난다
+  const k2 = Math.max(0, (W - 4) / 3);
+  if (k2 > 0) {
+    document.querySelectorAll(LETTER_TARGETS.join(",")).forEach(splitLetters);
+    document.querySelectorAll("#portal .wch").forEach((s, i) => {
+      const r = rand(i * 31 + 5), a = r(), b = r(), c = r();
+      s.style.transition = "transform 2.4s ease";
+      s.style.transform = `translate(${(a - .5) * 4 * k2}px, ${(b - .5) * 12 * k2}px) rotate(${(c - .5) * 30 * k2}deg)`;
+    });
+  }
+}
+
+/* ===== 엔딩 =====
+   ① 꿈 카드가 점점 작아지며 사진 무리 한가운데로 들어가, 8번째 기억이 된다
+   ② 다른 기억들과 함께 잠시 둥둥 떠 있는다
+   ③ 화면 전체가 하얗게 번진다 (오프닝 전환과 같은 효과)
+   ④ 다음 날 아침의 업무 화면. 광고가 있던 자리에 내가 적은 꿈이 남아 있다 */
+const DREAM_W = 150;   // 사진 무리에 합쳐졌을 때 꿈 카드의 크기(기준 화면 px)
+function converge() {
+  const card = $("dreamCard");
+  const r = card.getBoundingClientRect();
+  const target = DREAM_W * scale();
+  // 카드 크기를 고정해 두고 줄어들게 한다
+  card.style.width = r.width + "px";
+  card.style.height = r.height + "px";
+  card.style.transition = "transform 3.2s cubic-bezier(.6,0,.25,1), box-shadow 3.2s ease, font-size 3.2s ease";
+  requestAnimationFrame(() => {
+    card.style.transform = `scale(${target / r.width})`;
+    card.style.boxShadow = "0 0 24px rgba(0,0,0,.6)";
+  });
+
+  // 다 줄어들면 같은 자리·같은 크기의 기억 조각으로 바꿔치기 → 다른 사진들처럼 떠다닌다
+  setTimeout(() => {
+    const now = new Date();
+    const today = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())}`;
+    const el = makeFrag(0, 0, DREAM_W, "", `No.0008 · ${today}`, "#1a1a1d", true);
+    el.classList.add("dream-frag");
+    el.style.setProperty("--delay", "0s");   // 줄어든 자리에서 끊김 없이 떠다니기 시작
+    const pic = el.querySelector(".pic");
+    const t = document.createElement("div");
+    t.className = "dtext";
+    t.textContent = card.textContent;
+    pic.appendChild(t);
+    el.style.height = (r.height * target / r.width) + "px";
+    el.classList.add("on");
+    el.style.transition = "none";
+    $("lit").style.transition = "opacity .4s ease";
+    $("lit").style.opacity = 0;
+
+    // 레퍼런스처럼, 모든 기억 사진에서 흰 선이 뻗어 나와 가운데 꿈으로 모인다
+    const all = nodes.filter(Boolean).flatMap(n => [n.card, ...n.frags]);
+    const dist = e => Math.hypot(+e.dataset.x, +e.dataset.y);
+    all.sort((a, b) => dist(a) - dist(b));
+    const mid = [innerWidth / 2, innerHeight / 2];
+    all.forEach((e, i) => drawLine(addLine(center(e), mid, "l-dream", (i % 2 ? 1 : -1) * .12), 600 + i * 120));
+  }, 3300);
+
+  setTimeout(() => { const f = $("flash"); f.classList.add("slow"); f.classList.add("on"); }, 13000);
+  setTimeout(backToWork, 15800);
+}
+
+function backToWork() {
+  const d = $("dream");
+  d.classList.remove("show", "vis");
+  show("work");
+  $("clock").textContent = "08:52";
+  const ad = $("ad");
+  ad.className = "ad dreamad";
+  ad.innerHTML = '<span class="mine">수령 완료</span><div class="txt"></div>';
+  ad.querySelector(".txt").textContent = $("dreamCard").textContent;
+  setTimeout(() => $("flash").classList.remove("on"), 200);
+}
+
+// 테스트용: k개를 본 상태로 바로 이동
+function jumpTo(k) {
+  viewed = Math.max(viewed, k);
+  $("modal").classList.remove("show");
+  show("portal");
+  search();
+  if (k >= 2) for (let n = shown + 1; n <= k; n++) revealItem(n, false);
+}
+
+// 창 크기가 바뀌면 조각 위치와 선을 다시 계산
+addEventListener("resize", () => {
+  document.querySelectorAll(".frag").forEach(placeFrag);
+  const n = shown;
+  if (!n || ended) return;
+  $("lines").innerHTML = "";
+  document.querySelectorAll(".frag").forEach(el => el.remove());
+  nodes.length = 0; shown = 0;
+  for (let i = 1; i <= n; i++) revealItem(i, false);
+});
+
+/* ----- 포털 버튼 ----- */
+$("searchBtn").addEventListener("click", search);
+$("keyword").addEventListener("keydown", e => { if (e.key === "Enter") search(); });
+$("resetBtn").addEventListener("click", () => { $("searchForm").reset(); cat2.length = 1; cat2.disabled = true; search(); });
+$("closeBtn").addEventListener("click", closeModal);
+$("modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
+
+/* ----- 테스트 단축키 (입력창에 쓰는 중에는 꺼짐) -----
+   R: 처음으로   W: 업무 화면   1~7: 그만큼 열람한 상태로 포털   E: 수령 팝업 */
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input, select, textarea") || e.metaKey || e.ctrlKey) return;
+  const k = e.key.toLowerCase();
+  if (k === "r") { location.reload(); return; }
+  if (ended) return;
+  if (k === "w") { const v = $("opening").querySelector("video"); if (v) v.pause(); show("work"); }
+  if (/^[1-7]$/.test(k)) { jumpTo(+k); }
+  if (k === "e") { jumpTo(ITEMS.length); showReceipt(); }
+});
+</script>
+</body>
+</html>
