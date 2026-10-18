@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>유실물 조회 | ○○ 유실물 보관센터</title>
+<title>유실물 조회 | 제31 유실물 보관센터</title>
 <style>
   :root {
     --navy: #1f2d4a;
@@ -187,10 +187,15 @@
   .lit .card { display: inline-block; padding: 34px 46px; border: 1px solid rgba(255,255,255,.8); background: radial-gradient(circle at 50% 40%, #2c2c30, #0e0e10 75%); box-shadow: 0 0 60px rgba(255,255,255,.12); color: #f4f4f4; font-size: 24px; font-weight: 600; max-width: 520px; word-break: keep-all; transition: box-shadow 2s ease, background 2s ease, color 2s ease; }
   .lit .card.glow { box-shadow: 0 0 120px 30px rgba(255,255,255,.45); background: radial-gradient(circle at 50% 45%, #fff, #e8e8e8 80%); color: #111; }
   /* 엔딩 후 업무 화면의 광고 자리 */
-  .ad.dreamad { cursor: default; background: #f6f1ea; display: grid; place-items: center; padding: 10px 14px; }
+  /* 밤에 본 장면들이 배너를 꽉 채우고, 그 위에 꿈이 남는다 */
+  .ad.dreamad { cursor: default; border-color: #2a2a2e; background: #0e0e10; display: grid; place-items: center; }
   .ad.dreamad:hover { outline: none; }
-  .ad.dreamad .mine { font-size: 9px; color: #9a8f82; letter-spacing: .1em; position: absolute; top: 5px; left: 8px; }
-  .ad.dreamad .txt { font-size: 15px; font-weight: 600; color: #3a332c; text-align: center; word-break: keep-all; line-height: 1.5; }
+  .ad.dreamad .mine { position: absolute; z-index: 3; top: 5px; left: 7px; padding: 1px 5px; font-size: 9px; color: rgba(255,255,255,.75); background: rgba(0,0,0,.55); letter-spacing: .08em; }
+  .ad.dreamad .still { position: absolute; z-index: 1; aspect-ratio: 16 / 9; background: #2a2a2e; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.6); opacity: 0; animation: adIn 1.6s ease forwards; }
+  .ad.dreamad .still img { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(.6) saturate(.85); }
+  .ad.dreamad .txt { position: relative; z-index: 2; max-width: 70%; padding: 10px 26px; background: radial-gradient(ellipse at center, rgba(10,10,12,.85) 40%, transparent 72%); font-size: 13px; font-weight: 600; color: #f4f4f4; text-align: center; word-break: keep-all; line-height: 1.45; }
+  @keyframes adIn { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .ad.dreamad .still { animation: none; opacity: 1; } }
 
   /* ===== 기억 조각 레이어 (포털 뒤의 어둠) ===== */
   #memory { position: fixed; inset: 0; z-index: 0; pointer-events: none; display: none; }
@@ -312,7 +317,7 @@
   <div class="util fadable" data-fade="4"><div class="wrap"><a href="#">로그인</a><a href="#">회원가입</a><a href="#">고객센터</a></div></div>
   <header class="gnb">
     <div class="wrap">
-      <a class="logo" href="#"><span class="logo-mark fadable" data-fade="5"><span></span></span><span id="logoText">○○ 유실물 보관센터</span></a>
+      <a class="logo" href="#"><span class="logo-mark fadable" data-fade="5"><span></span></span><span id="logoText">제31 유실물 보관센터</span></a>
       <nav class="menu fadable" data-fade="5"><a href="#">센터 소개</a><a href="#" class="on">유실물 조회</a><a href="#">분실 신고</a><a href="#">수령 안내</a></nav>
     </div>
   </header>
@@ -358,7 +363,7 @@
   <footer class="fadable" data-fade="2">
     <div class="wrap">
       <div class="links"><a href="#">이용약관</a><a href="#">개인정보처리방침</a><a href="#">사이트맵</a></div>
-      본 사이트는 습득물 정보 제공을 위해 운영됩니다.<br>© ○○ 유실물 보관센터. All rights reserved.
+      본 사이트는 습득물 정보 제공을 위해 운영됩니다.<br>© 제31 유실물 보관센터. All rights reserved.
     </div>
   </footer>
 </section>
@@ -399,13 +404,13 @@
    물품 사진:    assets/img/01_item.jpg ~ 07_item.jpg
    기억 영상:    assets/video/01.mp4 ~ 07.mp4 */
 const ITEMS = [
-  { no: 1, name: "봉제 인형 (갈색, 귀 봉제선 터짐)", cat1: "완구", cat2: "인형", place: "주택 안방 이불 속", room: "제1보관실", date: "1999-12-24" },
-  { no: 2, name: "장난감 포크레인 (노란색)", cat1: "완구", cat2: "중장비 모형", place: "아파트 놀이터 모래밭", room: "제2보관실", date: "2003-05-05" },
-  { no: 3, name: "운동화 (흰색, 한 켤레)", cat1: "신발", cat2: "운동화", place: "초등학교 옥상", room: "제3보관실", date: "2007-06-08" },
+  { no: 1, name: "봉제 인형 (별 모양 머리, 파란 몸통)", cat1: "완구", cat2: "인형", place: "주택 안방 이불 속", room: "제1보관실", date: "1999-12-24" },
+  { no: 2, name: "장난감 포크레인 (노란색)", cat1: "완구", cat2: "중장비 모형", place: "광안리 해수욕장", room: "제2보관실", date: "2003-05-05" },
+  { no: 3, name: "운동화 (하늘색, 날개 장식, 한 켤레)", cat1: "신발", cat2: "운동화", place: "공원", room: "제3보관실", date: "2007-06-08" },
   { no: 4, name: "회초리 (나무, 길이 약 60cm)", cat1: "생활용품", cat2: "기타", place: "주택 복도 끝", room: "제4보관실", date: "2010-03-19" },
-  { no: 5, name: "문제집 (수리 영역, 필기 다수)", cat1: "도서", cat2: "수험서", place: "독서실 24번 좌석", room: "제5보관실", date: "2014-10-02" },
-  { no: 6, name: "담배 (1갑, 2개비 남음)", cat1: "기호품", cat2: "담배", place: "경계 초소", room: "제6보관실", date: "2017-08-14" },
-  { no: 7, name: "소주 (녹색 병, 개봉됨)", cat1: "주류", cat2: "소주", place: "회사 앞 편의점 테이블", room: "제7보관실", date: "2022-11-25" }
+  { no: 5, name: "수학 문제집", cat1: "도서", cat2: "수험서", place: "독서실 24번 좌석", room: "제5보관실", date: "2014-10-02" },
+  { no: 6, name: "담배 (흰색 갑, 개봉됨)", cat1: "기호품", cat2: "담배", place: "아파트 옥상", room: "제6보관실", date: "2017-08-14" },
+  { no: 7, name: "소주 (녹색 병, 뚜껑 없음, 절반 남음)", cat1: "주류", cat2: "소주", place: "회사 앞 포차", room: "제7보관실", date: "2022-11-25" }
 ];
 const MAILS = [
   ["팀장", "[긴급] 3분기 실적 보고서 재검토 요청", "23:12", true],
@@ -424,6 +429,7 @@ const pad = n => String(n).padStart(2, "0");
 const fmt = d => d.replace(/-/g, ".");
 let viewed = 0;      // 열람한 개수 (1번부터 순서대로)
 let ended = false;   // 꿈 입력 단계 진입 여부
+let claimedAt = null; // 꿈을 입력(수령)한 시각
 
 /* ----- 단계 전환 ----- */
 function show(id) {
@@ -625,6 +631,7 @@ $("dreamInput").addEventListener("keydown", e => {
   const text = $("dreamInput").value.trim();
   if (!text) return;
   $("dreamCard").textContent = text;
+  claimedAt = new Date();
   $("ask").style.opacity = 0;
   $("dreamInput").blur();
   document.body.classList.remove("asking");   // 사진들이 다시 또렷해진다
@@ -787,7 +794,7 @@ function flyFromRow(no, card) {
 }
 
 // 본 기억 수(d)에 따라 유실물 포털이 어두워지고 지워진다
-const LOGO = "○○ 유실물 보관센터";
+const LOGO = "제31 유실물 보관센터";
 const LOGO_ORDER = [...LOGO].map((_, i) => i).sort((a, b) => ((a * 7) % 11) - ((b * 7) % 11));
 // 첫 번째 기억 뒤에는 아무것도 바뀌지 않고, 2~7번째 여섯 번에 걸쳐 고르게 변한다.
 // stage: 본 기억 수 d를 0~7 사이 변화 단계로 바꾼 값 (d=1 → 0, d=7 → 7)
@@ -936,8 +943,23 @@ function backToWork() {
   $("clock").textContent = "08:52";
   const ad = $("ad");
   ad.className = "ad dreamad";
-  ad.innerHTML = '<span class="mine">수령 완료</span><div class="txt"></div>';
-  ad.querySelector(".txt").textContent = $("dreamCard").textContent;
+  const t = claimedAt || new Date();
+  const stamp = `${t.getFullYear()}.${pad(t.getMonth() + 1)}.${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
+  // 기억마다 영상 스틸컷 한 장씩. [왼쪽 %, 위 %, 너비 %, 기울기] — 배너 밖으로 잘려도 괜찮다
+  const stills = [[-6, -10, 31, -2], [21, -14, 30, 1.5], [48, -8, 30, -1], [75, -12, 32, 2],
+                  [-5, 42, 37, 1.5], [29, 48, 36, -1.5], [63, 40, 42, 1]];
+  ad.innerHTML = `<span class="mine">No.0008 · 수령 완료 · ${stamp}</span><div class="txt"></div>`;
+  stills.forEach(([x, y, w, rot], i) => {
+    const m = document.createElement("div");
+    m.className = "still";
+    m.style.cssText = `left:${x}%;top:${y}%;width:${w}%;transform:rotate(${rot}deg);animation-delay:${.3 + i * .25}s`;
+    const img = new Image();
+    img.src = `assets/img/${pad(i + 1)}_frag${i % 3 + 1}.jpg`;
+    img.onerror = () => img.remove();
+    m.appendChild(img);
+    ad.appendChild(m);
+  });
+  ad.querySelector(".txt").textContent = $("dreamCard").textContent || "아직 잃어버리지 않은 꿈";
   setTimeout(() => $("flash").classList.remove("on"), 200);
 }
 
